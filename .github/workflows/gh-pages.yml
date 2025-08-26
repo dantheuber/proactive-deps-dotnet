@@ -35,8 +35,11 @@ jobs:
           dotnet tool update --global docfx || dotnet tool install --global docfx
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
+      - name: Generate API metadata
+        run: docfx metadata docfx.json
+
       - name: Build site with DocFX
-        run: docfx docfx.json
+        run: docfx build docfx.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

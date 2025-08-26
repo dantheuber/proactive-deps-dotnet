@@ -23,6 +23,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# docfx generated files
+docs/
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json

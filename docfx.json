@@ -10,7 +10,7 @@
           ]
         }
       ],
-      "dest": "docs"
+      "dest": "api"
     }
   ],
   "build": {
@@ -21,6 +21,12 @@
         ],
         "exclude": [
           "docs/**"
+        ]
+      },
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md"
         ]
       }
     ],
