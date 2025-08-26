@@ -4,6 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  <!-- Suppress missing XML docs warnings to avoid noisy builds while we incrementally document -->
+  <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

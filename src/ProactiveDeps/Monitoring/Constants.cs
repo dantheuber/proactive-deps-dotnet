@@ -1,5 +1,6 @@
 namespace ProactiveDeps.Monitoring;
 
+/// Constants for status codes/messages and default timings used by the monitor.
 public static class Constants
 {
     // Status codes

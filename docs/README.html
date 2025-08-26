@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>proactive-deps for .NET | Proactive Deps for .NET </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="proactive-deps for .NET | Proactive Deps for .NET ">
+      
+      
+      <link rel="icon" href="favicon.ico">
+      <link rel="stylesheet" href="public/docfx.min.css">
+      <link rel="stylesheet" href="public/main.css">
+      <meta name="docfx:navrel" content="toc.html">
+      <meta name="docfx:tocrel" content="toc.html">
+      
+      <meta name="docfx:rel" content="">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/dantheuber/proactive-deps-dotnet/blob/main/README.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="index.html">
+            <img id="logo" class="svg" src="logo.svg" alt="Proactive Deps (.NET)">
+            Proactive Deps (.NET)
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="proactive-deps-for-net">proactive-deps for .NET</h1>
+
+<p>Lightweight, cached, proactive dependency health checks for .NET services.</p>
+<p>Define async checks (DBs, REST APIs, queues, etc.), get structured status + latency, and expose Prometheus metrics (via Prometheus.Client) out-of-the-box.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>Simple registration of dependency checks</li>
+<li>Per-dependency TTL + refresh threshold (in-memory TTL cache with proactive refresh)</li>
+<li>Latency + health gauges for Prometheus (Prometheus.Client)</li>
+<li>Skippable checks (e.g., for local dev / disabled services)</li>
+<li>.NET-first API with records and async checks</li>
+</ul>
+<h2 id="install">Install</h2>
+<p>Until published to NuGet, add a project reference to this library:</p>
+<pre><code class="lang-bash"># From your app project folder
+dotnet add reference ../path/to/src/ProactiveDeps/ProactiveDeps.csproj
+</code></pre>
+<p>Or clone this repository and use the provided sample.</p>
+<h2 id="quick-start">Quick Start</h2>
+<pre><code class="lang-csharp">using ProactiveDeps.Monitoring;
+
+var monitor = new DependencyMonitor(new DependencyMonitorOptions
+{
+    // Optional defaults
+    CacheDurationMs = 60_000,
+    RefreshThresholdMs = 5_000,
+    CheckIntervalMs = 15_000
+});
+
+monitor.Register(new DependencyCheckOptions
+{
+    Name = &quot;redis&quot;,
+    Description = &quot;Redis cache&quot;,
+    Impact = &quot;Responses may be slower (cache miss path).&quot;,
+    Check = async () =&gt;
+    {
+        // Perform your health check here (ping Redis, open DB connection, etc.)
+        await Task.Delay(5);
+        return Constants.SUCCESS_STATUS_CODE; // 0
+    },
+    // Optional per-dependency overrides
+    CacheDurationMs = 10_000,
+    RefreshThresholdMs = 5_000,
+    CheckDetails = new DatabaseCheckDetails(&quot;database&quot;, Server: &quot;localhost&quot;, Database: &quot;cache&quot;, DbType: &quot;redis&quot;)
+});
+
+// Start periodic checks
+monitor.StartDependencyCheckInterval();
+
+// Query on-demand
+var all = await monitor.GetAllStatuses();
+var one = await monitor.GetStatus(&quot;redis&quot;);
+
+// Render Prometheus text exposition
+var metricsText = await monitor.GetPrometheusMetrics();
+</code></pre>
+<h3 id="skipping-a-dependency">Skipping a Dependency</h3>
+<pre><code class="lang-csharp">monitor.Register(new DependencyCheckOptions
+{
+    Name = &quot;external-service&quot;,
+    Description = &quot;An external service that is temporarily disabled&quot;,
+    Impact = &quot;No impact since this service is currently unused.&quot;,
+    Skip = true,
+    Check = async () =&gt; Constants.SUCCESS_STATUS_CODE // won't run because Skip=true
+});
+</code></pre>
+<h3 id="return-shape">Return Shape</h3>
+<p>Check delegate returns either:</p>
+<ul>
+<li><code>Constants.SUCCESS_STATUS_CODE | Constants.ERROR_STATUS_CODE | Constants.WARNING_STATUS_CODE</code> (int), or</li>
+<li><code>new DependencyCheckResult { Code = ..., Error = ex, ErrorMessage = &quot;...&quot; }</code></li>
+</ul>
+<p><code>Skip = true</code> short-circuits to an OK result with <code>latency: 0</code> and <code>skipped: true</code>.</p>
+<h3 id="fetch-all-statuses">Fetch All Statuses</h3>
+<pre><code class="lang-csharp">var statuses = await monitor.GetAllStatuses();
+// Example (C# record serialized to JSON):
+// [
+//   {
+//     &quot;name&quot;: &quot;redis&quot;,
+//     &quot;description&quot;: &quot;Redis cache layer&quot;,
+//     &quot;impact&quot;: &quot;Responses may be slower due to missing cache.&quot;,
+//     &quot;healthy&quot;: true,
+//     &quot;health&quot;: {
+//       &quot;state&quot;: &quot;OK&quot;,
+//       &quot;code&quot;: 0,
+//       &quot;latency&quot;: 5,
+//       &quot;skipped&quot;: false
+//     },
+//     &quot;lastChecked&quot;: &quot;2025-04-13T12:00:00Z&quot;
+//   }
+// ]
+</code></pre>
+<h3 id="single-dependency">Single Dependency</h3>
+<pre><code class="lang-csharp">var status = await monitor.GetStatus(&quot;redis&quot;);
+</code></pre>
+<h2 id="prometheus-metrics">Prometheus Metrics</h2>
+<p>The monitor initializes Prometheus.Client gauges on first use (or uses your provided registry):</p>
+<ul>
+<li><code>dependency_latency_ms{dependency}</code> – last check latency (ms)</li>
+<li><code>dependency_health{dependency,impact}</code> – health state (0 OK, 1 WARNING, 2 CRITICAL)</li>
+</ul>
+<pre><code class="lang-csharp">var metrics = await monitor.GetPrometheusMetrics();
+Console.WriteLine(metrics);
+/*
+# HELP dependency_latency_ms Last dependency check latency in milliseconds
+# TYPE dependency_latency_ms gauge
+dependency_latency_ms{dependency=&quot;redis&quot;} 5
+
+# HELP dependency_health Dependency health status (0=OK,1=WARNING,2=CRITICAL)
+# TYPE dependency_health gauge
+dependency_health{dependency=&quot;redis&quot;,impact=&quot;Responses may be slower (cache miss path).&quot;} 0
+*/
+</code></pre>
+<h3 id="aspnet-core-integration-optional">ASP.NET Core Integration (optional)</h3>
+<p>Use <code>Prometheus.Client.AspNetCore</code> and <code>Prometheus.Client.DependencyInjection</code> to expose <code>/metrics</code> and share the same registry:</p>
+<pre><code class="lang-csharp">// Program.cs / Startup.cs
+using Prometheus.Client;
+using Prometheus.Client.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMetricFactory(); // adds ICollectorRegistry &amp; IMetricFactory
+
+var app = builder.Build();
+app.UsePrometheusServer(); // exposes /metrics
+
+// Resolve the registry/factory to pass into DependencyMonitor
+var registry = app.Services.GetRequiredService&lt;ICollectorRegistry&gt;();
+var factory  = app.Services.GetRequiredService&lt;IMetricFactory&gt;();
+var monitor  = new DependencyMonitor(new DependencyMonitorOptions { CheckIntervalMs = 15000 }, registry, factory);
+
+monitor.Register(new DependencyCheckOptions { /* ... */ });
+monitor.StartDependencyCheckInterval();
+
+app.Run();
+</code></pre>
+<h2 id="example-project-console-demo">Example Project (Console Demo)</h2>
+<p>See <code>samples/ConsoleDemo</code> for a minimal runnable example.</p>
+<pre><code class="lang-bash">cd samples/ConsoleDemo
+dotnet run
+</code></pre>
+<h2 id="api-overview">API Overview</h2>
+<ul>
+<li><code>DependencyMonitor(options?, registry?, metricFactory?)</code>
+<ul>
+<li><code>Register(DependencyCheckOptions)</code></li>
+<li><code>StartDependencyCheckInterval()</code> / <code>StopDependencyCheckInterval()</code></li>
+<li><code>Task&lt;DependencyStatus&gt; GetStatus(string name)</code></li>
+<li><code>Task&lt;IReadOnlyList&lt;DependencyStatus&gt;&gt; GetAllStatuses()</code></li>
+<li><code>Task&lt;string&gt; GetPrometheusMetrics()</code></li>
+<li><code>ICollectorRegistry GetPrometheusRegistry()</code></li>
+</ul>
+</li>
+<li><code>Constants</code>: status codes/messages and default timings
+<ul>
+<li><code>SUCCESS_STATUS_CODE = 0</code>, <code>ERROR_STATUS_CODE = 1</code>, <code>WARNING_STATUS_CODE = 2</code></li>
+<li><code>SUCCESS_STATUS_MESSAGE = &quot;OK&quot;</code>, <code>ERROR_STATUS_MESSAGE = &quot;CRITICAL&quot;</code>, <code>WARNING_STATUS_MESSAGE = &quot;WARNING&quot;</code></li>
+<li>Defaults: <code>DEFAULT_CACHE_DURATION_MS = 60000</code>, <code>DEFAULT_REFRESH_THRESHOLD_MS = 5000</code>, <code>DEFAULT_CHECK_INTERVAL_MS = 15000</code></li>
+</ul>
+</li>
+<li><code>DependencyCheckOptions</code>: Name, Description, Impact, Skip, Contact, Check, CheckDetails, CacheDurationMs, RefreshThresholdMs</li>
+<li><code>DependencyCheckResult</code>: Code, Error?, ErrorMessage?</li>
+<li><code>DependencyStatus</code>: Name, Description, Impact, Contact?, Health { State, Code, Latency, Skipped }, Healthy, LastChecked, CheckDetails?, Error?, ErrorMessage?</li>
+<li><code>CheckDetails</code> (optional records): <code>GenericCheckDetails</code>, <code>DatabaseCheckDetails</code>, <code>RestCheckDetails</code>, <code>SoapCheckDetails</code></li>
+</ul>
+<h2 id="license">License</h2>
+<p>MIT © 2025 Daniel Essig</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/dantheuber/proactive-deps-dotnet/blob/main/README.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          <span>Made with <a href="https://dotnet.github.io/docfx">docfx</a></span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

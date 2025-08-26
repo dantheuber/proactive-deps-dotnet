@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "src",
+          "files": [
+            "**/*.csproj"
+          ]
+        }
+      ],
+      "dest": "docs"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "docs/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "docs",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appName": "Proactive Deps (.NET)",
+      "_appTitle": "Proactive Deps for .NET",
+      "_enableSearch": true,
+      "pdf": true
+    },
+    "xref": [
+      "https://xref.docs.microsoft.com/query?uid={uid}"
+    ]
+  }
+}

@@ -62,6 +62,7 @@ internal sealed class TtlCache
     }
 }
 
+/// Monitors registered dependencies with TTL caching, proactive refresh, and Prometheus metrics.
 public sealed class DependencyMonitor
 {
     private readonly List<DependencyCheckOptions> _dependencies = new();
@@ -78,8 +79,14 @@ public sealed class DependencyMonitor
 
     private Timer? _timer;
 
+    /// True if the periodic check timer is running.
     public bool CheckIntervalStarted { get; private set; }
 
+    /// Create a new monitor.
+    ///
+    /// options: Optional defaults and scheduling.
+    /// registry: Optional Prometheus registry to emit metrics into.
+    /// metricFactory: Optional metric factory; if omitted, a new one is created from the registry.
     public DependencyMonitor(DependencyMonitorOptions? options = null, ICollectorRegistry? registry = null, IMetricFactory? metricFactory = null)
     {
         options ??= new();
@@ -104,6 +111,7 @@ public sealed class DependencyMonitor
         // Note: Collecting default process metrics is provided by extensions; caller can wire if needed
     }
 
+    /// Register a dependency check.
     public void Register(DependencyCheckOptions dependency)
     {
         ArgumentNullException.ThrowIfNull(dependency);
@@ -112,6 +120,7 @@ public sealed class DependencyMonitor
         _dependencies.Add(dependency);
     }
 
+    /// Start a periodic check loop at the configured interval.
     public void StartDependencyCheckInterval()
     {
         CheckIntervalStarted = true;
@@ -123,6 +132,7 @@ public sealed class DependencyMonitor
         }, null, _checkIntervalMs, _checkIntervalMs);
     }
 
+    /// Stop the periodic check loop if it is running.
     public void StopDependencyCheckInterval()
     {
         CheckIntervalStarted = false;
@@ -130,6 +140,7 @@ public sealed class DependencyMonitor
         _timer = null;
     }
 
+    /// Get the current status for a single dependency, using cache if still valid.
     public async Task<DependencyStatus> GetStatus(string dependencyName)
     {
         var cached = _cache.Get<DependencyStatus>(dependencyName);
@@ -140,6 +151,7 @@ public sealed class DependencyMonitor
         return await GetDependencyStatus(dep).ConfigureAwait(false);
     }
 
+    /// Get current statuses for all registered dependencies.
     public async Task<IReadOnlyList<DependencyStatus>> GetAllStatuses()
     {
         var tasks = _dependencies.Select(GetDependencyStatus).ToArray();
@@ -147,6 +159,7 @@ public sealed class DependencyMonitor
         return results;
     }
 
+    /// Return the Prometheus text exposition for the monitor's metrics.
     public async Task<string> GetPrometheusMetrics()
     {
         // ensure gauges updated prior to scrape
@@ -159,6 +172,7 @@ public sealed class DependencyMonitor
         return await reader.ReadToEndAsync().ConfigureAwait(false);
     }
 
+    /// Access the underlying Prometheus registry (for integration scenarios).
     public ICollectorRegistry GetPrometheusRegistry() => _registry;
 
     private async Task<DependencyStatus> GetDependencyStatus(DependencyCheckOptions dependency)
