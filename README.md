@@ -170,23 +170,9 @@ cd samples/ConsoleDemo
 dotnet run
 ```
 
-## API Overview
+## API Documentation 
 
-- `DependencyMonitor(options?, registry?, metricFactory?)`
-  - `Register(DependencyCheckOptions)`
-  - `StartDependencyCheckInterval()` / `StopDependencyCheckInterval()`
-  - `Task<DependencyStatus> GetStatus(string name)`
-  - `Task<IReadOnlyList<DependencyStatus>> GetAllStatuses()`
-  - `Task<string> GetPrometheusMetrics()`
-  - `ICollectorRegistry GetPrometheusRegistry()`
-- `Constants`: status codes/messages and default timings
-  - `SUCCESS_STATUS_CODE = 0`, `ERROR_STATUS_CODE = 1`, `WARNING_STATUS_CODE = 2`
-  - `SUCCESS_STATUS_MESSAGE = "OK"`, `ERROR_STATUS_MESSAGE = "CRITICAL"`, `WARNING_STATUS_MESSAGE = "WARNING"`
-  - Defaults: `DEFAULT_CACHE_DURATION_MS = 60000`, `DEFAULT_REFRESH_THRESHOLD_MS = 5000`, `DEFAULT_CHECK_INTERVAL_MS = 15000`
-- `DependencyCheckOptions`: Name, Description, Impact, Skip, Contact, Check, CheckDetails, CacheDurationMs, RefreshThresholdMs
-- `DependencyCheckResult`: Code, Error?, ErrorMessage?
-- `DependencyStatus`: Name, Description, Impact, Contact?, Health { State, Code, Latency, Skipped }, Healthy, LastChecked, CheckDetails?, Error?, ErrorMessage?
-- `CheckDetails` (optional records): `GenericCheckDetails`, `DatabaseCheckDetails`, `RestCheckDetails`, `SoapCheckDetails`
+For detailed API documentation, refer to the [docs](https://dantheuber.github.io/proactive-deps-dotnet)
 
 ## License
 
